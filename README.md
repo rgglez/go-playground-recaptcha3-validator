@@ -22,16 +22,19 @@ See the [real example](examples/real/).
 ## Configuration
 
 * **Secret** the secret key for reCAPTCHA v3. Required.
-
 * **ExpectedAction** a string specifying the expected action. For example: "login" or "contact".
-
 * **MinScore** a float value specifying the lowest acceptable score for the reCAPTCHA validation.
-
 * **HTTPClient** a pointer to an optional http.Client object
+
+## Examples
+
+Two examples are provided:
+
+* *[mock](examples/mock/)* for testing (it does not contact Google's servers).
+* *[real](examples/real/)* to try the validator, using the sample *[web page](examples/frontend/index.html)*. You need to copy that webpage (or create a similar) to your web server, and use your own site key.
 
 ## Dependencies
 
-* go get github.com/gofiber/fiber/v2
 * go get github.com/go-playground/validator/v10
 
 ## Security
