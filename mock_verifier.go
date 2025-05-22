@@ -1,4 +1,4 @@
-package recaptcha
+package recaptcha3
 
 type MockVerifier struct {
 	ShouldPass bool

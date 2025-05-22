@@ -8,7 +8,7 @@ import (
 	fiber "github.com/gofiber/fiber/v2"
 	"github.com/gofiber/fiber/v2/middleware/cors"
 
-	recaptcha "github.com/rgglez/go-playground-recaptcha3-validator"
+	recaptcha3 "github.com/rgglez/go-playground-recaptcha3-validator"
 )
 
 // Struct to bind and validate
@@ -27,7 +27,7 @@ func main() {
 	}
 
 	// Create real Google verifier
-	verifier, err := recaptcha.NewGoogleVerifier(recaptcha.Config{
+	verifier, err := recaptcha3.NewGoogleVerifier(recaptcha3.Config{
 		Secret:         secret,
 		ExpectedAction: "contact",
 		MinScore:       0.5,
@@ -38,14 +38,14 @@ func main() {
 
 	// Set up validator
 	validate := validator.New()
-	err = recaptcha.RegisterRecaptchaValidator(validate, "recaptcha", verifier)
+	err = recaptcha3.RegisterRecaptchaValidator(validate, "recaptcha", verifier)
 	if err != nil {
 		panic(err)
 	}
 
 	// Start Fiber app
 	app := fiber.New()
-	
+
 	app.Use(cors.New(cors.Config{AllowOrigins: "*"}))
 
 	app.Post("/contact", func(c *fiber.Ctx) error {
