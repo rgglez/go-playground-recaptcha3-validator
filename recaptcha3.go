@@ -19,11 +19,11 @@
 package recaptcha3
 
 import (
-	"encoding/json"
 	"errors"
 	"fmt"
-	"net/http"
 	"time"
+
+	resty "resty.dev/v3"
 
 	"github.com/go-playground/validator/v10"
 )
@@ -48,70 +48,91 @@ type Config struct {
 	// The lowest acceptable score for the reCAPTCHA validation.
 	MinScore float64
 
-	// Optional http.Client object.
-	HTTPClient *http.Client
+	// Optional Resty client
+	Client *resty.Client
+}
+
+//-----------------------------------------------------------------------------
+
+type RestyConfig struct {
+	RetryCount int
+	RetryWaitTime int
+	RetryMaxWaitTime int
 }
 
 //-----------------------------------------------------------------------------
 
 type GoogleVerifier struct {
-	secret         string
-	expectedAction string
-	minScore       float64
-	client         *http.Client
+	Secret         string
+	ExpectedAction string
+	MinScore       float64
+	Client         *resty.Client
+}
+
+//-----------------------------------------------------------------------------
+
+// reCAPTCHA response
+type RecaptchaResponse struct {
+	Success     bool     `json:"success"`
+	ChallengeTS string   `json:"challenge_ts"`
+	Hostname    string   `json:"hostname"`
+	Score       float64  `json:"score"`
+	Action      string   `json:"action"`
+	ErrorCodes  []string `json:"error-codes"`
 }
 
 //-----------------------------------------------------------------------------
 
 func NewGoogleVerifier(cfg Config) (*GoogleVerifier, error) {
+	var client *resty.Client
+
 	if cfg.Secret == "" {
 		return nil, errors.New("recaptcha secret is required")
 	}
-	if cfg.HTTPClient == nil {
-		cfg.HTTPClient = &http.Client{Timeout: 5 * time.Second}
+	if cfg.Client == nil {
+		client = resty.New().
+			SetRetryCount(3).
+			SetRetryWaitTime(2 * time.Second).
+			SetRetryMaxWaitTime(8 * time.Second).
+			AddRetryConditions(
+				func(r *resty.Response, err error) bool {
+					return err != nil || r.StatusCode() >= 500
+				})
+	} else {
+		client = cfg.Client
 	}
 	return &GoogleVerifier{
-		secret:         cfg.Secret,
-		expectedAction: cfg.ExpectedAction,
-		minScore:       cfg.MinScore,
-		client:         cfg.HTTPClient,
+		Secret:         cfg.Secret,
+		ExpectedAction: cfg.ExpectedAction,
+		MinScore:       cfg.MinScore,
+		Client:         client,
 	}, nil
 }
 
 //-----------------------------------------------------------------------------
 
 func (g *GoogleVerifier) Verify(token string) (bool, error) {
-	req, _ := http.NewRequest("POST", "https://www.google.com/recaptcha/api/siteverify", nil)
-	q := req.URL.Query()
-	q.Add("secret", g.secret)
-	q.Add("response", token)
-	req.URL.RawQuery = q.Encode()
+	resp := RecaptchaResponse{}
+	_, err := g.Client.R().
+		SetFormData(map[string]string{
+			"secret":   g.Secret,
+			"response": token,
+		}).
+		SetResult(&resp).
+		Post("https://www.google.com/recaptcha/api/siteverify")
 
-	resp, err := g.client.Do(req)
 	if err != nil {
 		return false, err
 	}
-	defer resp.Body.Close()
 
-	var body struct {
-		Success    bool     `json:"success"`
-		Score      float64  `json:"score"`
-		Action     string   `json:"action"`
-		ErrorCodes []string `json:"error-codes"`
-	}
-	if err := json.NewDecoder(resp.Body).Decode(&body); err != nil {
-		return false, err
+	if !resp.Success || resp.Score < g.MinScore {
+		return false, errors.New("reCAPTCHA verification failed")
 	}
 
-	if !body.Success {
-		return false, fmt.Errorf("recaptcha failed: %v", body.ErrorCodes)
+	if g.ExpectedAction != "" && resp.Action != g.ExpectedAction {
+		return false, errors.New("unexpected reCAPTCHA action")
 	}
-	if body.Action != g.expectedAction {
-		return false, fmt.Errorf("unexpected action: %s", body.Action)
-	}
-	if body.Score < g.minScore {
-		return false, fmt.Errorf("low score: %f", body.Score)
-	}
+
 	return true, nil
 }
 
