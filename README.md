@@ -6,6 +6,8 @@
 ![GitHub commit activity](https://img.shields.io/github/commit-activity/y/rgglez/go-playground-recaptcha3-validator)
 [![Go Report Card](https://goreportcard.com/badge/github.com/rgglez/go-playground-recaptcha3-validator)](https://goreportcard.com/report/github.com/rgglez/go-playground-recaptcha3-validator)
 [![GitHub release](https://img.shields.io/github/release/rgglez/go-playground-recaptcha3-validator.svg)](https://github.com/rgglez/go-playground-recaptcha3-validator/releases/)
+![GitHub stars](https://img.shields.io/github/stars/rgglez/go-playground-recaptcha3-validator?style=social)
+![GitHub forks](https://img.shields.io/github/forks/rgglez/go-playground-recaptcha3-validator?style=social)
 
 **go-playground-recaptcha3-validator** is a custom validator for [playground](https://github.com/go-playground/validator/) implementing [Google reCAPTCHA v3](https://developers.google.com/recaptcha/docs/v3?hl=es-419) validation.
 
