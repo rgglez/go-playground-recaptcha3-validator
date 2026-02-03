@@ -46,7 +46,7 @@ Two examples are provided:
 
 ## License
 
-Copyright (c) 2025 Rodolfo González González
+Copyright (c) 2026 Rodolfo González González
 
 Licensed under the [Apache 2.0](LICENSE) license. Read the [LICENSE](LICENSE) file.
 
