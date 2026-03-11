@@ -19,6 +19,63 @@ go get github.com/rgglez/go-playground-recaptcha3-validator
 
 ## Usage
 
+First import the module:
+
+```go
+import (
+   recaptcha3 "github.com/rgglez/go-playground-recaptcha3-validator"
+)
+```
+
+This is a sample structure to validate:
+
+```go
+// Struct to bind and validate
+type ContactForm struct {
+	Name           string `json:"name" validate:"required"`
+	Email          string `json:"email" validate:"required,email"`
+	RecaptchaToken string `json:"recaptcha_token" validate:"required,recaptcha"`
+}
+```
+
+Set it up:
+
+```go
+// Load reCAPTCHA secret
+secret := os.Getenv("RECAPTCHA3_SECRET_KEY") // this is just a sample name
+if secret == "" {
+    fmt.Println("Missing RECAPTCHA3_SECRET_KEY env variable")
+    os.Exit(1)
+}
+
+// Create Google verifier
+verifier, err := recaptcha3.NewGoogleVerifier(recaptcha3.Config{
+    Secret:         secret,
+    ExpectedAction: "contact",
+    MinScore:       0.5,
+})
+if err != nil {
+    panic(err)
+}
+
+// Set up validator
+validate := validator.New()
+err = recaptcha3.RegisterRecaptchaValidator(validate, "recaptcha", verifier)
+if err != nil {
+    panic(err)
+}
+```
+
+Call it in your handler:
+
+```go
+if err := validate.Struct(form); err != nil {
+    return c.Status(fiber.StatusUnprocessableEntity).JSON(fiber.Map{
+        "error": err.Error(),
+    })
+}
+```
+
 See the [real example](examples/real/).
 
 ## Configuration
@@ -42,7 +99,7 @@ Two examples are provided:
 ## Security
 
 * Remember that reCAPTCHA v3 does not stops bots directly, but just gives a risk score. It is responsability of the application to accept the request or deny it.
-* Another captcha (such as reCAPTCHA v2) could be shown with a classic challenge as a "plan B", if the score is lower than expected. 
+* Another captcha (such as reCAPTCHA v2) could be shown with a classic challenge as a "plan B", if the score is lower than expected.
 
 ## License
 
