@@ -1,4 +1,4 @@
-module recaptcha3validator
+module github.com/rgglez/go-playground-recaptcha3-validator
 
 go 1.24.1
 
